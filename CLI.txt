@@ -1,0 +1,97 @@
+Step.via aws cli create ASG (autoscaling group)
+MIN instances 1
+DESIRED instances 1
+MAX instances 3
+ec2 instances must be created from template
+template should contain  user data which  which will install Nginx on EC2 instances
+
+	
+	
+	aws ec2 create-launch-template \
+    --launch-template-name MyLaunchTemplate \
+    --version-description Initialversion \
+    --launch-template-data "$(cat D:/MyLaunchTemplate.json)" \
+    --no-verify-ssl
+	
+	
+	aws ec2 describe-subnets --filters Name=vpc-id,Values=vpc-06035df9339c2607b \
+    --no-verify-ssl
+	
+	
+	aws autoscaling create-auto-scaling-group \
+  --auto-scaling-group-name My-auto-scaling-group \
+  --launch-template LaunchTemplateName=MyLaunchTemplate \
+  --min-size 1 \
+  --desired-capacity 1 \
+  --max-size 3 \
+  --vpc-zone-identifier subnet-040d2f3b48f455a50 \
+  --no-verify-ssl
+  
+########################################  
+ Step2. via aws cli crate ALB in front of ASG
+TG should be created
+
+  
+  aws elbv2 create-target-group \
+  --name MyTargetGroup \
+  --protocol HTTP \
+  --port 80 \
+  --vpc-id vpc-06035df9339c2607b \
+  --no-verify-ssl
+  
+  aws elbv2 create-load-balancer \
+  --name MyLoadBalancer \
+  --subnets subnet-040d2f3b48f455a50 subnet-0e671cf512d3e2ac5 \
+  --security-groups sg-069f104b8a5d9e771 \
+  --no-verify-ssl
+  
+  aws elbv2 create-listener \
+  --load-balancer-arn arn:aws:elasticloadbalancing:us-east-1:814976642708:loadbalancer/app/MyLoadBalancer/1b2fcbc2b846aaa1 \
+  --protocol HTTP \
+  --port 80 \
+  --default-actions Type=forward,TargetGroupArn=arn:aws:elasticloadbalancing:us-east-1:814976642708:targetgroup/MyTargetGroup/b36001d299dbbde2 \
+  --no-verify-ssl
+  
+  aws autoscaling attach-load-balancer-target-groups \
+  --auto-scaling-group-name My-auto-scaling-group \
+  --target-group-arns arn:aws:elasticloadbalancing:us-east-1:814976642708:targetgroup/MyTargetGroup/b36001d299dbbde2 \
+  --no-verify-ssl
+  
+  #####################################
+  
+   Step3.via aws cli create RDS MYSQL with private access only
+
+   
+   aws rds create-db-instance \
+    --engine mysql \
+    --db-instance-identifier mydbinstance \
+    --allocated-storage 5 \
+    --db-instance-class db.t2.micro \
+    --vpc-security-group-ids sg-069f104b8a5d9e771 \
+    --db-subnet-group rds-ec2-db-subnet-group-1 \
+    --master-username masteruser \
+    --master-user-password MasterPass555 \
+	--no-verify-ssl
+	
+	############################################
+	
+	Step4.via aws cli create s3 bucket
+via aws clia enable versioning
+via aws cli
+upload file into  the bucket
+
+
+
+	aws s3api create-bucket \
+  --bucket nartestik \
+  --region us-east-1 \
+  --no-verify-ssl
+  
+  
+  aws s3api put-bucket-versioning \
+  --bucket nartestik \
+  --versioning-configuration Status=Enabled \
+  --no-verify-ssl
+  
+  aws s3 cp D:/Narine.txt s3://nartestik \
+  --no-verify-ssl
