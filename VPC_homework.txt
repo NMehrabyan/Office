@@ -1,0 +1,67 @@
+Step1. via aws cli
+create VPC
+create public subnet
+you need IG
+pay attention to routing table
+
+
+aws ec2 create-vpc --cidr-block 10.0.0.0/16  \
+--no-verify-ssl
+
+aws ec2 create-internet-gateway  \
+--no-verify-ssl
+
+
+aws ec2 attach-internet-gateway --internet-gateway-id igw-0d3e34e77216ed7a2 --vpc-id vpc-0b50bab0fdcb5ed81  \
+--no-verify-ssl
+
+
+
+aws ec2 create-subnet --vpc-id vpc-0b50bab0fdcb5ed81 --cidr-block 10.0.0.0/24  \
+--no-verify-ssl
+
+
+
+aws ec2 create-route-table --vpc-id vpc-0b50bab0fdcb5ed81   \
+--no-verify-ssl
+
+
+aws ec2 associate-route-table --subnet-id subnet-043d5d9c74374b70f --route-table-id rtb-01b74a73acc2a4ee6  \
+--no-verify-ssl
+
+
+
+aws ec2 create-route --route-table-id rtb-01b74a73acc2a4ee6 --destination-cidr-block 0.0.0.0/0 --gateway-id igw-0d3e34e77216ed7a2 \
+--no-verify-ssl
+
+
+
+aws ec2 modify-subnet-attribute --subnet-id subnet-043d5d9c74374b70f  --map-public-ip-on-launch  \
+--no-verify-ssl
+
+################################################|
+
+Step2.create private subnet with access to internets
+you need NAT GW
+pay attention to routing table
+
+
+aws ec2 create-subnet --vpc-id vpc-0b50bab0fdcb5ed81 --cidr-block 10.0.1.0/24 \
+--no-verify-ssl
+
+
+aws ec2 allocate-address \
+--no-verify-ssl
+
+aws ec2 create-nat-gateway --subnet-id subnet-099003e25ed568557 --allocation-id eipalloc-01a9375b973ccfb3d  \
+--no-verify-ssl
+
+aws ec2 create-route-table --vpc-id vpc-0b50bab0fdcb5ed81  \
+--no-verify-ssl
+
+aws ec2 associate-route-table --subnet-id subnet-099003e25ed568557 --route-table-id rtb-043e7c13624ed09c8  \
+--no-verify-ssl
+
+aws ec2 create-route --route-table-id rtb-043e7c13624ed09c8 --destination-cidr-block 0.0.0.0/0 --nat-gateway-id nat-09afb84c8b440e0e7  \
+--no-verify-ssl
+
